@@ -2,7 +2,7 @@
 
 A low-power LoRaWAN sensor that counts trail visitors at Woodmont Park. Counts only; no images or personal data.
 
-Project page: https://woodmontfriends.github.io/trail-counter/
+Project page: https://woodmontfriends.org/trail-counter/
 
 ## Architecture
 
