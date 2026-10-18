@@ -23,6 +23,21 @@
   pre { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; overflow-x:auto; font-size:.9rem; line-height:1.4; }
   ol li, ul li { margin:6px 0; }
   .tag { display:inline-block; font-size:.8rem; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--muted); }
+  figure { margin:16px 0; }
+  figure svg { display:block; width:100%; height:auto; margin:0 auto; }
+  figcaption { color:var(--muted); font-size:.9rem; margin-top:6px; }
+  svg text { fill:var(--fg); font-family:inherit; font-size:15px; }
+  svg .sub { fill:var(--muted); font-size:12.5px; }
+  svg .box { fill:var(--card); stroke:var(--line); stroke-width:1.5; }
+  svg .hl { fill:var(--card); stroke:var(--accent); stroke-width:2; }
+  svg .ln { stroke:var(--muted); stroke-width:2; fill:none; }
+  svg .rf { stroke:var(--accent); stroke-width:2; fill:none; stroke-dasharray:6 5; }
+  svg .zone { fill:var(--accent); opacity:.15; }
+  svg .ground { fill:var(--line); }
+  svg .trail { fill:#a98f66; opacity:.55; }
+  svg .acc { fill:var(--accent); }
+  svg text.acc { fill:var(--accent); font-weight:600; }
+  svg .head { font-weight:600; }
   footer { margin-top:48px; color:var(--muted); font-size:.9rem; }
   a { color:var(--accent); }
 </style>
@@ -40,12 +55,42 @@
     <li>Runs on batteries, with a solar panel planned as a later upgrade.</li>
   </ul>
 
-  <h2>How it works</h2>
-<pre>
- PIR sensor ──Grove──▶ SenseCAP S2110 ──RS485──▶ SenseCAP S2100 ──LoRaWAN──▶ Gateway ──▶ Cloud / dashboard
- (in the woods)        (XIAO RP2040,             (data logger,              (rec center
-                        counts + Modbus)          battery powered)           poolhouse)
-</pre>
+  <h2>How the data flows</h2>
+  <figure style="max-width:440px;margin-left:auto;margin-right:auto">
+  <svg viewBox="0 0 440 560" role="img" aria-label="Data flow: sensors to S2110 to S2100, LoRaWAN radio to the gateway at the poolhouse, then the internet to the cloud and a dashboard">
+    <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="acc"/></marker></defs>
+    <text x="20" y="22" class="sub">IN THE WOODS</text>
+    <rect class="box" x="60" y="32" width="320" height="56" rx="10"/>
+    <text x="220" y="56" text-anchor="middle" class="head">Sensor</text>
+    <text x="220" y="76" text-anchor="middle" class="sub">PIR motion · rain gauge · temp / humidity · soil</text>
+    <path class="ln" d="M220 88 V116" marker-end="url(#ar)"/>
+    <text x="232" y="107" class="sub">Grove / pulse</text>
+    <rect class="hl" x="60" y="118" width="320" height="56" rx="10"/>
+    <text x="220" y="142" text-anchor="middle" class="head">SenseCAP S2110</text>
+    <text x="220" y="162" text-anchor="middle" class="sub">XIAO RP2040 · counts, then serves it over Modbus</text>
+    <path class="ln" d="M220 174 V202" marker-end="url(#ar)"/>
+    <text x="232" y="193" class="sub">RS485</text>
+    <rect class="hl" x="60" y="204" width="320" height="56" rx="10"/>
+    <text x="220" y="228" text-anchor="middle" class="head">SenseCAP S2100 data logger</text>
+    <text x="220" y="248" text-anchor="middle" class="sub">polls every 10–15 min · battery powered</text>
+    <path class="rf" d="M220 260 V318" marker-end="url(#ar)"/>
+    <text x="232" y="290" class="acc" style="font-weight:600">LoRaWAN radio</text>
+    <text x="20" y="312" class="sub">POOLHOUSE (UPHILL)</text>
+    <rect class="hl" x="60" y="320" width="320" height="56" rx="10"/>
+    <text x="220" y="344" text-anchor="middle" class="head">SenseCAP M2 gateway</text>
+    <text x="220" y="364" text-anchor="middle" class="sub">US915 · indoors, line of sight to the trail</text>
+    <path class="ln" d="M220 376 V404" marker-end="url(#ar)"/>
+    <text x="232" y="395" class="sub">Wi-Fi / Ethernet · internet</text>
+    <text x="20" y="418" class="sub">CLOUD</text>
+    <rect class="box" x="60" y="424" width="320" height="56" rx="10"/>
+    <text x="220" y="448" text-anchor="middle" class="head">SenseCAP Cloud (or TTN)</text>
+    <text x="220" y="468" text-anchor="middle" class="sub">stores readings · charts · CSV export</text>
+    <path class="ln" d="M220 480 V508" marker-end="url(#ar)"/>
+    <rect class="box" x="60" y="510" width="320" height="40" rx="10"/>
+    <text x="220" y="535" text-anchor="middle" class="head">Dashboard for the Friends</text>
+  </svg>
+  <figcaption>One node's path from trail to dashboard. Each node repeats the top three boxes; they all share one gateway.</figcaption>
+  </figure>
 
   <h2>Hardware</h2>
   <div class="card">
@@ -55,8 +100,80 @@
     <tr><td>SenseCAP S2100 data logger</td><td>Polls the S2110 and sends the count by LoRaWAN. Battery powered.</td></tr>
     <tr><td>SenseCAP M2 indoor gateway (US915)</td><td>Receives uplinks. Planned location: rec center poolhouse, uphill with line of sight to the trail.</td></tr>
     <tr><td>Grove PIR motion sensor</td><td>Detects people passing. To be ordered or confirmed.</td></tr>
+    <tr><td>Second S2110 + S2100 (Node B)</td><td>Environment station: tipping-bucket rain gauge (S2100 pulse input), temp/humidity sensor in a radiation shield (S2110 Grove), optional RS485 soil probe. Planned; input types to be checked against the S2100 docs.</td></tr>
   </table>
   </div>
+
+  <h2>Sensor setup in the field</h2>
+  <figure>
+  <svg viewBox="0 0 760 360" role="img" aria-label="Side view of two posts: the visitor counter with a PIR facing the trail, and the environment station with a rain gauge, a shielded temperature sensor and a buried soil probe">
+    <rect class="ground" x="0" y="290" width="760" height="70"/>
+    <rect class="trail" x="40" y="290" width="270" height="14"/>
+    <text x="175" y="326" text-anchor="middle" class="sub">trail</text>
+
+    <!-- Node A -->
+    <text x="120" y="24" class="head" text-anchor="middle">Node A · visitor counter</text>
+    <rect class="acc" x="114" y="110" width="12" height="180"/>
+    <rect class="hl" x="84" y="100" width="72" height="62" rx="8"/>
+    <text x="120" y="126" text-anchor="middle" style="font-size:13px">S2110</text>
+    <text x="120" y="146" text-anchor="middle" style="font-size:13px">+ S2100</text>
+    <rect class="acc" x="156" y="124" width="16" height="22" rx="3"/>
+    <path class="zone" d="M172 135 L310 70 L310 290 L172 135 Z"/>
+    <text x="250" y="84" class="sub" text-anchor="middle">PIR sees across the trail</text>
+    <text x="80" y="188" class="sub" text-anchor="end">box ~1 m up</text>
+    <text x="80" y="204" class="sub" text-anchor="end">on a post</text>
+    <path class="ln" d="M150 135 H156"/>
+
+    <!-- Node B -->
+    <text x="520" y="24" class="head" text-anchor="middle">Node B · environment station</text>
+    <rect class="acc" x="474" y="110" width="12" height="180"/>
+    <rect class="hl" x="444" y="100" width="72" height="62" rx="8"/>
+    <text x="480" y="126" text-anchor="middle" style="font-size:13px">S2110</text>
+    <text x="480" y="146" text-anchor="middle" style="font-size:13px">+ S2100</text>
+    <!-- rain gauge on separate pole -->
+    <rect class="acc" x="636" y="150" width="8" height="140"/>
+    <path class="box" d="M618 150 L662 150 L652 120 L628 120 Z"/>
+    <text x="640" y="112" text-anchor="middle" class="sub">rain gauge</text>
+    <path class="ln" d="M516 140 H560 V170 H638"/>
+    <!-- radiation shield on arm -->
+    <path class="ln" d="M480 100 V70 H560"/>
+    <rect class="box" x="556" y="52" width="46" height="28" rx="6"/>
+    <path class="ln" d="M560 62 H598 M560 70 H598" stroke-width="1"/>
+    <text x="612" y="62" class="sub">temp / humidity</text>
+    <text x="612" y="78" class="sub">in a vented shield</text>
+    <path class="ln" d="M516 120 H540 V66 H556"/>
+    <!-- soil probe -->
+    <rect class="acc" x="530" y="296" width="6" height="48" rx="2"/>
+    <path class="ln" d="M516 150 H533 V296"/>
+    <text x="548" y="338" class="sub">soil probe (buried)</text>
+    <text x="440" y="188" class="sub" text-anchor="end">cables enter the box</text>
+    <text x="440" y="204" class="sub" text-anchor="end">through glands</text>
+    <text x="626" y="190" text-anchor="end" class="sub">open sky,</text>
+    <text x="626" y="206" text-anchor="end" class="sub">level mount</text>
+  </svg>
+  <figcaption>Side view. Boxes stay sealed (IP66); only cables and the sensor heads leave them.</figcaption>
+  </figure>
+
+  <figure>
+  <svg viewBox="0 0 560 280" role="img" aria-label="Site sketch: the gateway on the hill at the poolhouse with radio links down to two nodes in the woods">
+    <rect class="ground" x="0" y="0" width="560" height="280" opacity=".35"/>
+    <path class="zone" d="M0 150 Q 120 120 260 175 T 560 210 V280 H0 Z" style="opacity:.2"/>
+    <text x="14" y="26" class="head">Not to scale · illustrative</text>
+    <rect class="hl" x="60" y="52" width="150" height="54" rx="10"/>
+    <text x="135" y="76" text-anchor="middle" class="head">Poolhouse</text>
+    <text x="135" y="94" text-anchor="middle" class="sub">M2 gateway · uphill</text>
+    <path class="rf" d="M170 106 L330 190"/>
+    <path class="rf" d="M170 106 L440 220"/>
+    <text x="305" y="132" class="acc" transform="rotate(26 305 132)">LoRaWAN</text>
+    <rect class="hl" x="290" y="190" width="90" height="46" rx="10"/>
+    <text x="335" y="210" text-anchor="middle" class="head">Node A</text>
+    <text x="335" y="227" text-anchor="middle" class="sub">visitor count</text>
+    <rect class="hl" x="400" y="220" width="130" height="46" rx="10"/>
+    <text x="465" y="240" text-anchor="middle" class="head">Node B</text>
+    <text x="465" y="257" text-anchor="middle" class="sub">rain · temp · soil</text>
+  </svg>
+  <figcaption>Both nodes talk to one gateway. A walk test with the S2100 will confirm that signal reaches the trail before anything is mounted.</figcaption>
+  </figure>
 
   <h2>Plan</h2>
   <ol>
@@ -64,6 +181,7 @@
     <li><strong>Bench prototype.</strong> PIR on the S2110, confirm counts show up in SenseCAP Cloud.</li>
     <li><strong>Firmware.</strong> Debounced counter (ignore re-triggers for ~3 s) exposed as a Modbus register, if the stock firmware doesn't cover it.</li>
     <li><strong>Field trial.</strong> Battery powered on one trail for a few weeks; compare against a manual count.</li>
+    <li><strong>Environment station.</strong> Build Node B so visitor counts can be compared with rain and temperature.</li>
     <li><strong>Later.</strong> Solar power, a second trail, and possibly an on-device camera that reports counts only.</li>
   </ol>
 
