@@ -5,205 +5,489 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Woodmont Trail Counter</title>
 <meta name="description" content="A low-power LoRaWAN sensor that counts trail visitors at Woodmont Park. Counts only, no images.">
+<meta name="color-scheme" content="light dark">
 <style>
-  :root { --bg:#f7f5ef; --fg:#1f2a1f; --muted:#5b665b; --accent:#2f6b3a; --card:#fff; --line:#dcd8cb; }
+  :root {
+    --bg:#f5f2e9; --fg:#1f2a1f; --muted:#5a655a; --accent:#2f6b3a; --accent-ink:#245a2e;
+    --card:#fffdf7; --line:#dcd5c3; --band:rgba(47,107,58,.07); --zone:rgba(47,107,58,.14);
+    --soil:#cbbc9d; --soil-deep:#b5a483; --trail:#a9906a; --tree:#7fa07f; --ridge:#dfe5cf; --hill:#cfd9bf;
+    --post:#6f5137; --metal:#8a8f87;
+    --c-dry:#3d8b4a; --c-damp:#b38e1c; --c-muddy:#9a5a2e; --c-frozen:#3b7fb5;
+    --ser: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#141a14; --fg:#e8ece6; --muted:#9aa89a; --accent:#7fc58a; --card:#1c241c; --line:#2d392d; }
+    :root {
+      --bg:#121812; --fg:#e7ebe4; --muted:#a2ae9f; --accent:#86c98f; --accent-ink:#9ad8a3;
+      --card:#1b231b; --line:#2f3b2f; --band:rgba(134,201,143,.08); --zone:rgba(134,201,143,.16);
+      --soil:#3b3527; --soil-deep:#2b271c; --trail:#5c4b35; --tree:#3a6340; --ridge:#1a2419; --hill:#213122;
+      --post:#a07c57; --metal:#9aa29a;
+      --c-dry:#7fc58a; --c-damp:#e0b94a; --c-muddy:#d6915f; --c-frozen:#7fb9e4;
+    }
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-  main { max-width:760px; margin:0 auto; padding:40px 16px 64px; }
-  h1 { font-size:2rem; line-height:1.2; margin:0 0 8px; }
-  h2 { font-size:1.25rem; margin:40px 0 12px; color:var(--accent); }
-  p.lead { color:var(--muted); font-size:1.1rem; margin:0 0 8px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 20px; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:20px 16px 48px; }
+  a { color:var(--accent-ink); text-decoration-thickness:1px; text-underline-offset:2px; }
+  a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
+  strong { font-weight:650; }
+  code { font-size:.92em; background:var(--band); padding:1px 5px; border-radius:4px; }
+
+  /* Hero */
+  .hero { background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:hidden; margin-bottom:8px; }
+  .hero .scene { display:block; width:100%; height:auto; background:var(--band); }
+  .hero .body { padding:20px 24px 24px; }
+  .eyebrow { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin:0 0 10px; color:var(--muted); font-size:.85rem; letter-spacing:.02em; }
+  .tag { display:inline-block; white-space:nowrap; font-size:.78rem; padding:2px 10px; border-radius:99px; border:1px solid var(--line); color:var(--muted); background:var(--bg); }
+  h1 { font-family:var(--ser); font-weight:600; font-size:clamp(2rem, 6vw, 2.6rem); line-height:1.15; margin:0 0 12px; letter-spacing:-.01em; }
+  p.lead { font-size:1.12rem; margin:0; color:var(--fg); max-width:60ch; }
+  .facts { list-style:none; padding:0; margin:18px 0 0; display:flex; flex-wrap:wrap; gap:8px; }
+  .facts li { display:inline-flex; align-items:center; gap:7px; font-size:.9rem; padding:5px 12px 5px 9px; border-radius:99px; background:var(--band); color:var(--accent-ink); font-weight:600; margin:0; }
+  .facts svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* Sections */
+  h2 { font-family:var(--ser); font-weight:600; font-size:1.55rem; line-height:1.25; margin:48px 0 14px; }
+  h2::before { content:""; display:block; width:34px; height:3px; border-radius:2px; background:var(--accent); margin-bottom:10px; }
+  h3 { font-size:1rem; margin:0 0 6px; color:var(--accent-ink); }
+  section > p { margin:0 0 14px; }
+  ol, ul { padding-left:1.3em; }
+  ol li, ul li { margin:8px 0; }
+  ol li::marker { color:var(--accent-ink); font-weight:600; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:6px 18px; }
   table { width:100%; border-collapse:collapse; }
-  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { color:var(--muted); font-weight:600; font-size:.9rem; }
-  pre { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; overflow-x:auto; font-size:.9rem; line-height:1.4; }
-  ol li, ul li { margin:6px 0; }
-  .tag { display:inline-block; font-size:.8rem; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--muted); }
-  figure { margin:16px 0; }
-  figure svg { display:block; width:100%; height:auto; margin:0 auto; }
-  figcaption { color:var(--muted); font-size:.9rem; margin-top:6px; }
-  svg text { fill:var(--fg); font-family:inherit; font-size:15px; }
-  svg .sub { fill:var(--muted); font-size:12.5px; }
+  th, td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td { border-bottom:0; }
+  th { color:var(--muted); font-weight:600; font-size:.85rem; text-transform:uppercase; letter-spacing:.04em; }
+  td:first-child { font-weight:600; }
+  @media (max-width:600px) {
+    .stack table, .stack tbody, .stack tr, .stack td { display:block; }
+    .stack thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+    .stack tr { padding:10px 0; border-bottom:1px solid var(--line); }
+    .stack tr:last-child { border-bottom:0; }
+    .stack td { padding:2px 0; border:0; font-weight:400; }
+    .stack td:first-child { font-weight:600; padding-bottom:4px; }
+    .stack td[data-label]::before { content:attr(data-label) ": "; color:var(--muted); font-size:.85rem; }
+  }
+
+  /* Figures and SVG */
+  figure { margin:18px 0 0; }
+  figure.flow { max-width:440px; margin-left:auto; margin-right:auto; }
+  figure.site { max-width:520px; margin-left:auto; margin-right:auto; }
+  figure svg { display:block; width:100%; height:auto; }
+  figcaption { color:var(--muted); font-size:.92rem; line-height:1.5; margin-top:10px; }
+  .pair { display:grid; grid-template-columns:1fr; gap:18px; margin-top:18px; }
+  @media (min-width:700px) { .pair { grid-template-columns:1fr 1fr; } }
+  .pair figure { margin:0; }
+  .pair figcaption { margin-top:8px; }
+  .scenebox { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .scenebox svg { display:block; }
+  .scenebox h3 { padding:12px 16px 0; }
+
+  svg text { fill:var(--fg); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; font-size:14px; }
+  svg .head { font-weight:650; font-size:16px; }
+  svg .sub { fill:var(--muted); font-size:13.5px; }
+  svg .lbl { font-size:13.5px; }
+  svg .eyebrow-t { fill:var(--muted); font-size:12.5px; font-weight:650; letter-spacing:.08em; }
+  svg text.acc { fill:var(--accent-ink); font-weight:650; }
   svg .box { fill:var(--card); stroke:var(--line); stroke-width:1.5; }
   svg .hl { fill:var(--card); stroke:var(--accent); stroke-width:2; }
-  svg .ln { stroke:var(--muted); stroke-width:2; fill:none; }
-  svg .rf { stroke:var(--accent); stroke-width:2; fill:none; stroke-dasharray:6 5; }
-  svg .zone { fill:var(--accent); opacity:.15; }
-  svg .ground { fill:var(--line); }
-  svg .trail { fill:#a98f66; opacity:.55; }
+  svg .band { fill:var(--band); }
+  svg .ln { stroke:var(--muted); stroke-width:2; fill:none; stroke-linecap:round; }
+  svg .wire { stroke:var(--muted); stroke-width:1.6; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  svg .rf { stroke:var(--accent); stroke-width:2.2; fill:none; stroke-dasharray:7 5; stroke-linecap:round; }
+  svg .zone { fill:var(--zone); }
+  svg .zone-edge { stroke:var(--accent); stroke-width:1.2; fill:none; stroke-dasharray:4 4; opacity:.7; }
   svg .acc { fill:var(--accent); }
-  svg text.acc { fill:var(--accent); font-weight:600; }
-  svg .head { font-weight:600; }
-  .states { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:16px 0; }
-  .state { background:var(--card); border:1px solid var(--line); border-left-width:6px; border-radius:10px; padding:12px 14px; }
-  .state b { display:block; font-size:1.1rem; }
-  .state span { color:var(--muted); font-size:.9rem; }
-  .state.dry { border-left-color:#3d8b4a; } .state.damp { border-left-color:#c9a227; }
-  .state.muddy { border-left-color:#a0522d; } .state.frozen { border-left-color:#4a90c2; }
-  .statuscard { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; max-width:380px; }
-  .statuscard .big { font-size:1.6rem; font-weight:700; color:#a0522d; margin:4px 0; }
+  svg .ico { stroke:var(--accent-ink); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  svg .icobg { fill:var(--band); }
+  svg .soil { fill:var(--soil); }
+  svg .soil-deep { fill:var(--soil-deep); }
+  svg .trail { fill:var(--trail); }
+  svg .trail-line { stroke:var(--trail); stroke-width:6; fill:none; stroke-dasharray:10 7; stroke-linecap:round; }
+  svg .tree { fill:var(--tree); }
+  svg .ridge { fill:var(--ridge); }
+  svg .hill { fill:var(--hill); }
+  svg .post { fill:var(--post); }
+  svg .grass { stroke:var(--tree); stroke-width:1.6; fill:none; stroke-linecap:round; }
+  svg .metal { fill:var(--card); stroke:var(--metal); stroke-width:1.5; }
+  svg .person { stroke:var(--fg); stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  svg .person-head { fill:var(--fg); }
+
+  /* Trail conditions */
+  .statuscard { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 20px 18px; max-width:400px; box-shadow:0 1px 0 var(--line); }
+  .statuscard .top { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; }
+  .statuscard .where { color:var(--muted); font-size:.88rem; }
+  .statuscard .big { display:flex; align-items:center; gap:10px; font-size:1.8rem; font-weight:700; line-height:1.1; color:var(--c-muddy); margin:4px 0 8px; }
+  .statuscard .big svg { width:30px; height:30px; }
+  .statuscard p { margin:0 0 6px; }
   .statuscard small { color:var(--muted); }
-  footer { margin-top:48px; color:var(--muted); font-size:.9rem; }
-  a { color:var(--accent); }
+  .states { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:18px 0; padding:0; list-style:none; }
+  .state { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:0; }
+  .state .name { display:flex; align-items:center; gap:8px; font-weight:700; font-size:1.05rem; margin-bottom:4px; }
+  .state .name svg { width:22px; height:22px; flex:none; }
+  .state span { color:var(--muted); font-size:.9rem; line-height:1.45; display:block; }
+  .state.dry .name { color:var(--c-dry); } .state.damp .name { color:var(--c-damp); }
+  .state.muddy .name { color:var(--c-muddy); } .state.frozen .name { color:var(--c-frozen); }
+  .cond { stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+  footer { margin-top:56px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem; display:flex; flex-wrap:wrap; gap:6px 18px; justify-content:space-between; }
+  footer p { margin:0; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a { transition:color .15s ease; }
+  }
 </style>
 </head>
 <body>
 <main>
-  <span class="tag">Draft · first pass</span>
-  <h1>Woodmont Trail Counter</h1>
-  <p class="lead">A small, low-power sensor that counts how many people use the trails at Woodmont Park, so the Friends of Woodmont Park can show real usage numbers when asking for support.</p>
+  <header class="hero">
+    <svg class="scene" viewBox="0 0 760 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+      <defs>
+        <symbol id="h-fir" viewBox="0 0 40 60"><path d="M20 2 L34 26 H27 L36 42 H28 L38 56 H2 L12 42 H4 L13 26 H6 Z"/><rect x="18" y="54" width="4" height="6"/></symbol>
+        <symbol id="h-oak" viewBox="0 0 40 60"><circle cx="20" cy="24" r="16"/><circle cx="10" cy="32" r="11"/><circle cx="30" cy="32" r="11"/><rect x="18" y="38" width="4" height="22"/></symbol>
+      </defs>
+      <path class="ridge" d="M0 90 C 120 50, 220 60, 330 86 S 560 110, 760 70 V150 H0 Z"/>
+      <path class="hill" d="M0 118 C 110 92, 230 100, 360 118 S 600 136, 760 112 V150 H0 Z"/>
+      <g class="tree" opacity=".85">
+        <use href="#h-fir" x="40" y="62" width="36" height="54"/>
+        <use href="#h-oak" x="90" y="76" width="30" height="45"/>
+        <use href="#h-fir" x="150" y="70" width="30" height="45"/>
+        <use href="#h-fir" x="560" y="68" width="34" height="51"/>
+        <use href="#h-oak" x="610" y="80" width="30" height="45"/>
+        <use href="#h-fir" x="690" y="58" width="40" height="60"/>
+        <use href="#h-oak" x="660" y="82" width="26" height="39"/>
+      </g>
+      <path class="trail-line" d="M230 150 C 300 128, 380 132, 450 120 S 560 118, 600 150" opacity=".7"/>
+      <rect class="post" x="394" y="92" width="5" height="40" rx="1"/>
+      <rect class="hl" x="383" y="80" width="27" height="22" rx="4"/>
+      <path class="rf" d="M396 80 V66" stroke-dasharray="none"/>
+      <path class="ln" d="M386 62 a10 10 0 0 1 20 0" stroke="var(--accent)" stroke-width="2"/>
+      <path class="ln" d="M380 56 a16 16 0 0 1 32 0" stroke="var(--accent)" stroke-width="2" opacity=".6"/>
+    </svg>
+    <div class="body">
+      <p class="eyebrow"><span class="tag">Draft · first pass</span><span>Friends of Woodmont Park</span></p>
+      <h1>Woodmont Trail Counter</h1>
+      <p class="lead">A small, low-power sensor that counts how many people use the trails at Woodmont Park, so the Friends of Woodmont Park can show real usage numbers when asking for support.</p>
+      <ul class="facts" aria-label="Key facts">
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M4 6h10M4 18h7"/></svg>Counts only, no images</li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="15" height="10" rx="2"/><path d="M21 10v4M7 11v2M11 11v2"/></svg>Battery powered</li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V11M8.5 8.5a5 5 0 0 1 7 0M5.5 5.5a9 9 0 0 1 13 0"/></svg>Long-range radio</li>
+      </ul>
+    </div>
+  </header>
 
+  <section>
   <h2>What it does</h2>
   <ul>
     <li>Counts passes on a trail with a motion (PIR) sensor and reports the total every 10–15 minutes.</li>
     <li><strong>Counts only.</strong> No images, no audio, no personal data.</li>
     <li>Runs on batteries, with a solar panel planned as a later upgrade.</li>
   </ul>
+  </section>
 
+  <section>
   <h2>How the data flows</h2>
-  <figure style="max-width:440px;margin-left:auto;margin-right:auto">
-  <svg viewBox="0 0 440 560" role="img" aria-label="Data flow: sensors to S2110 to S2100, LoRaWAN radio to the gateway at the poolhouse, then the internet to the cloud and a dashboard">
-    <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="acc"/></marker></defs>
-    <text x="20" y="22" class="sub">IN THE WOODS</text>
-    <rect class="box" x="60" y="32" width="320" height="56" rx="10"/>
-    <text x="220" y="56" text-anchor="middle" class="head">Sensor</text>
-    <text x="220" y="76" text-anchor="middle" class="sub">PIR motion · rain gauge · temp / humidity · soil</text>
-    <path class="ln" d="M220 88 V116" marker-end="url(#ar)"/>
-    <text x="232" y="107" class="sub">Grove / pulse</text>
-    <rect class="hl" x="60" y="118" width="320" height="56" rx="10"/>
-    <text x="220" y="142" text-anchor="middle" class="head">SenseCAP S2110</text>
-    <text x="220" y="162" text-anchor="middle" class="sub">XIAO RP2040 · counts, then serves it over Modbus</text>
-    <path class="ln" d="M220 174 V202" marker-end="url(#ar)"/>
-    <text x="232" y="193" class="sub">RS485</text>
-    <rect class="hl" x="60" y="204" width="320" height="56" rx="10"/>
-    <text x="220" y="228" text-anchor="middle" class="head">SenseCAP S2100 data logger</text>
-    <text x="220" y="248" text-anchor="middle" class="sub">polls every 10–15 min · battery powered</text>
-    <path class="rf" d="M220 260 V318" marker-end="url(#ar)"/>
-    <text x="232" y="290" class="acc" style="font-weight:600">LoRaWAN radio</text>
-    <text x="20" y="312" class="sub">POOLHOUSE (UPHILL)</text>
-    <rect class="hl" x="60" y="320" width="320" height="56" rx="10"/>
-    <text x="220" y="344" text-anchor="middle" class="head">SenseCAP M2 gateway</text>
-    <text x="220" y="364" text-anchor="middle" class="sub">US915 · indoors, line of sight to the trail</text>
-    <path class="ln" d="M220 376 V404" marker-end="url(#ar)"/>
-    <text x="232" y="395" class="sub">Wi-Fi / Ethernet · internet</text>
-    <text x="20" y="418" class="sub">CLOUD</text>
-    <rect class="box" x="60" y="424" width="320" height="56" rx="10"/>
-    <text x="220" y="448" text-anchor="middle" class="head">SenseCAP Cloud (or TTN)</text>
-    <text x="220" y="468" text-anchor="middle" class="sub">stores readings · charts · CSV export</text>
-    <path class="ln" d="M220 480 V508" marker-end="url(#ar)"/>
-    <rect class="box" x="60" y="510" width="320" height="40" rx="10"/>
-    <text x="220" y="535" text-anchor="middle" class="head">Dashboard for the Friends</text>
-  </svg>
-  <figcaption>One node's path from trail to dashboard. Each node repeats the top three boxes; they all share one gateway.</figcaption>
-  </figure>
+  <figure class="flow">
+  <svg viewBox="0 0 440 690" role="img" aria-label="Data flow: in the woods, sensors feed the SenseCAP S2110, which serves counts over RS485 to the SenseCAP S2100 data logger; a LoRaWAN radio link carries them uphill to the SenseCAP M2 gateway in the poolhouse; from there the internet carries them to SenseCAP Cloud or TTN and on to a dashboard for the Friends.">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker>
+      <marker id="ar-acc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+      <symbol id="i-pir" viewBox="0 0 24 24"><circle cx="7" cy="12" r="3"/><path d="M13 7.5a6.5 6.5 0 0 1 0 9M16.5 4.5a10.5 10.5 0 0 1 0 15"/></symbol>
+      <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/><path d="M9.5 2.5v4M14.5 2.5v4M9.5 17.5v4M14.5 17.5v4M2.5 9.5h4M2.5 14.5h4M17.5 9.5h4M17.5 14.5h4"/></symbol>
+      <symbol id="i-logger" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="14" rx="2"/><path d="M8 12h8M8 16h5M17 2v5M14.5 4.5a3.5 3.5 0 0 1 5 0"/></symbol>
+      <symbol id="i-gw" viewBox="0 0 24 24"><path d="M12 22V11"/><circle cx="12" cy="9" r="2"/><path d="M7.5 5.5a6.5 6.5 0 0 1 9 0M4 2.5a11.5 11.5 0 0 1 16 0"/><path d="M6 22h12"/></symbol>
+      <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .5-8A6 6 0 0 0 6.3 12 3.3 3.3 0 0 0 7 18.5z"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20.5h18M7 16.5v-5M12 16.5V7M17 16.5v-8"/></symbol>
+      <symbol id="i-waves" viewBox="0 0 24 24"><path d="M12 19.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM8.5 15a5 5 0 0 1 7 0M5.5 11.5a9.5 9.5 0 0 1 13 0M2.5 8a14 14 0 0 1 19 0"/></symbol>
+    </defs>
 
+    <!-- In the woods -->
+    <rect class="band" x="0" y="0" width="440" height="300" rx="14"/>
+    <text x="16" y="24" class="eyebrow-t">IN THE WOODS</text>
+    <rect class="box" x="332" y="9" width="92" height="22" rx="11"/>
+    <text x="378" y="24" text-anchor="middle" class="sub" style="font-size:12.5px">one per node</text>
+
+    <rect class="box" x="16" y="38" width="408" height="60" rx="10"/>
+    <circle class="icobg" cx="46" cy="68" r="18"/>
+    <use href="#i-pir" class="ico" x="34" y="56" width="24" height="24"/>
+    <text x="76" y="63" class="head">Sensor</text>
+    <text x="76" y="84" class="sub">PIR motion · rain gauge · temp / humidity · soil</text>
+    <path class="ln" d="M220 98 V128" marker-end="url(#ar)"/>
+    <text x="232" y="117" class="sub">Grove / pulse input</text>
+
+    <rect class="hl" x="16" y="132" width="408" height="60" rx="10"/>
+    <circle class="icobg" cx="46" cy="162" r="18"/>
+    <use href="#i-chip" class="ico" x="34" y="150" width="24" height="24"/>
+    <text x="76" y="157" class="head">SenseCAP S2110</text>
+    <text x="76" y="178" class="sub">XIAO RP2040 · counts, then serves it over Modbus</text>
+    <path class="ln" d="M220 192 V222" marker-end="url(#ar)"/>
+    <text x="232" y="211" class="sub">RS485 cable</text>
+
+    <rect class="hl" x="16" y="226" width="408" height="60" rx="10"/>
+    <circle class="icobg" cx="46" cy="256" r="18"/>
+    <use href="#i-logger" class="ico" x="34" y="244" width="24" height="24"/>
+    <text x="76" y="251" class="head">SenseCAP S2100 data logger</text>
+    <text x="76" y="272" class="sub">polls every 10–15 min · battery powered</text>
+
+    <!-- Radio hop -->
+    <path class="rf" d="M220 286 V368" marker-end="url(#ar-acc)"/>
+    <use href="#i-waves" class="ico" x="228" y="310" width="22" height="22"/>
+    <text x="256" y="327" class="acc">LoRaWAN radio</text>
+
+    <!-- Poolhouse -->
+    <rect class="band" x="0" y="336" width="440" height="112" rx="14"/>
+    <text x="16" y="360" class="eyebrow-t">POOLHOUSE · UPHILL</text>
+    <rect class="hl" x="16" y="372" width="408" height="60" rx="10"/>
+    <circle class="icobg" cx="46" cy="402" r="18"/>
+    <use href="#i-gw" class="ico" x="34" y="390" width="24" height="24"/>
+    <text x="76" y="397" class="head">SenseCAP M2 gateway</text>
+    <text x="76" y="418" class="sub">US915 · indoors, line of sight to the trail</text>
+    <path class="ln" d="M220 432 V504" marker-end="url(#ar)"/>
+    <text x="232" y="472" class="sub">Wi-Fi / Ethernet · internet</text>
+
+    <!-- Cloud -->
+    <rect class="band" x="0" y="474" width="440" height="216" rx="14"/>
+    <text x="16" y="498" class="eyebrow-t">CLOUD</text>
+    <rect class="box" x="16" y="510" width="408" height="60" rx="10"/>
+    <circle class="icobg" cx="46" cy="540" r="18"/>
+    <use href="#i-cloud" class="ico" x="34" y="528" width="24" height="24"/>
+    <text x="76" y="535" class="head">SenseCAP Cloud (or TTN)</text>
+    <text x="76" y="556" class="sub">stores readings · charts · CSV export</text>
+    <path class="ln" d="M220 570 V606" marker-end="url(#ar)"/>
+    <rect class="box" x="16" y="610" width="408" height="60" rx="10"/>
+    <circle class="icobg" cx="46" cy="640" r="18"/>
+    <use href="#i-chart" class="ico" x="34" y="628" width="24" height="24"/>
+    <text x="76" y="635" class="head">Dashboard for the Friends</text>
+    <text x="76" y="656" class="sub">visitor counts · trail conditions</text>
+  </svg>
+  <figcaption>One node's path from trail to dashboard. Each node repeats the top three boxes; all nodes share one gateway.</figcaption>
+  </figure>
+  </section>
+
+  <section>
   <h2>Hardware</h2>
-  <div class="card">
+  <div class="card stack">
   <table>
-    <tr><th>Part</th><th>Role</th></tr>
+    <thead><tr><th scope="col">Part</th><th scope="col">Role</th></tr></thead>
+    <tbody>
     <tr><td>SenseCAP S2110 Sensor Builder</td><td>XIAO RP2040 board in an IP66 box. Reads the PIR and exposes the count as an RS485/Modbus sensor.</td></tr>
     <tr><td>SenseCAP S2100 data logger</td><td>Polls the S2110 and sends the count by LoRaWAN. Battery powered.</td></tr>
     <tr><td>SenseCAP M2 indoor gateway (US915)</td><td>Receives uplinks. Planned location: rec center poolhouse, uphill with line of sight to the trail.</td></tr>
     <tr><td>Grove PIR motion sensor</td><td>Detects people passing. To be ordered or confirmed.</td></tr>
     <tr><td>Second S2110 + S2100 (Node B)</td><td>Environment station: tipping-bucket rain gauge (S2100 pulse input), temp/humidity sensor in a radiation shield (S2110 Grove), optional RS485 soil probe. Planned; input types to be checked against the S2100 docs.</td></tr>
+    </tbody>
   </table>
   </div>
+  </section>
 
+  <section>
   <h2>Sensor setup in the field</h2>
-  <figure>
-  <svg viewBox="0 0 760 360" role="img" aria-label="Side view of two posts: the visitor counter with a PIR facing the trail, and the environment station with a rain gauge, a shielded temperature sensor and a buried soil probe">
-    <rect class="ground" x="0" y="290" width="760" height="70"/>
-    <rect class="trail" x="40" y="290" width="270" height="14"/>
-    <text x="175" y="326" text-anchor="middle" class="sub">trail</text>
+  <p>Two posts, a short walk apart. Each carries the same sealed box (an S2110 plus an S2100) and talks to the same gateway.</p>
+  <div class="pair">
+    <figure class="scenebox">
+      <h3>Node A · visitor counter</h3>
+      <svg viewBox="0 0 400 300" role="img" aria-label="Side view of Node A: a sealed box with the S2110 and S2100 mounted about a metre up a post beside the trail, with a small PIR sensor head on the box whose detection cone spreads across the trail; a walker on the trail is counted as a pass.">
+        <defs>
+          <symbol id="fa-fir" viewBox="0 0 40 60"><path d="M20 2 L34 26 H27 L36 42 H28 L38 56 H2 L12 42 H4 L13 26 H6 Z"/><rect x="18" y="54" width="4" height="6"/></symbol>
+          <symbol id="fa-oak" viewBox="0 0 40 60"><circle cx="20" cy="24" r="16"/><circle cx="10" cy="32" r="11"/><circle cx="30" cy="32" r="11"/><rect x="18" y="38" width="4" height="22"/></symbol>
+        </defs>
+        <!-- background trees -->
+        <g class="tree" opacity=".45">
+          <use href="#fa-oak" x="10" y="120" width="60" height="90"/>
+          <use href="#fa-fir" x="196" y="118" width="60" height="90"/>
+          <use href="#fa-fir" x="356" y="140" width="46" height="70"/>
+          <use href="#fa-oak" x="300" y="150" width="40" height="60"/>
+        </g>
+        <!-- ground -->
+        <rect class="soil" x="0" y="216" width="400" height="84"/>
+        <g class="soil-deep">
+          <rect x="24" y="252" width="14" height="3" rx="1.5"/><rect x="70" y="276" width="10" height="3" rx="1.5"/><rect x="128" y="262" width="12" height="3" rx="1.5"/>
+          <rect x="230" y="256" width="14" height="3" rx="1.5"/><rect x="300" y="280" width="10" height="3" rx="1.5"/><rect x="350" y="252" width="12" height="3" rx="1.5"/>
+          <rect x="40" y="288" width="10" height="3" rx="1.5"/><rect x="190" y="284" width="12" height="3" rx="1.5"/>
+        </g>
+        <path class="grass" d="M30 216 l3 -9 M34 216 l3 -8 M62 216 l-3 -8 M150 216 l3 -9 M154 216 l2 -7 M392 216 l-3 -8 M386 216 l2 -7"/>
+        <!-- trail tread -->
+        <rect class="trail" x="176" y="212" width="224" height="11" rx="4"/>
+        <text x="300" y="244" text-anchor="middle" class="lbl">trail</text>
+        <!-- PIR detection cone -->
+        <path class="zone" d="M158 120 L392 46 L392 212 Z"/>
+        <path class="zone-edge" d="M158 120 L392 46 M158 120 L392 212"/>
+        <text x="278" y="32" text-anchor="middle" class="lbl acc" style="fill:var(--accent-ink);font-weight:650">PIR sees across the trail</text>
+        <!-- post -->
+        <rect class="post" x="97" y="92" width="10" height="134" rx="2"/>
+        <rect class="post" x="94" y="88" width="16" height="6" rx="2"/>
+        <!-- antenna -->
+        <path class="ln" d="M131 84 V60" stroke="var(--metal)"/>
+        <circle cx="131" cy="58" r="3" fill="var(--metal)"/>
+        <!-- sealed box -->
+        <rect class="hl" x="66" y="84" width="72" height="92" rx="7"/>
+        <path d="M66 100 H138" stroke="var(--accent)" stroke-width="1.2" opacity=".6"/>
+        <g fill="var(--accent)" opacity=".6"><circle cx="72" cy="91" r="1.6"/><circle cx="132" cy="91" r="1.6"/><circle cx="72" cy="169" r="1.6"/><circle cx="132" cy="169" r="1.6"/></g>
+        <text x="102" y="134" text-anchor="middle" class="head" style="font-size:15px">S2110</text>
+        <text x="102" y="154" text-anchor="middle" class="sub">+ S2100</text>
+        <!-- PIR head on the trail side -->
+        <path class="wire" d="M138 120 H142"/>
+        <rect class="acc" x="142" y="110" width="14" height="20" rx="3"/>
+        <path d="M156 112 a8 8 0 0 1 0 16 Z" fill="var(--accent)" opacity=".8"/>
+        <!-- labels -->
+        <text x="8" y="54" class="lbl">sealed box (IP66)</text>
+        <text x="8" y="72" class="sub">about 1 m up a post</text>
+        <!-- walker -->
+        <circle class="person-head" cx="300" cy="138" r="8"/>
+        <path class="person" d="M300 148 V182 M300 158 L286 172 M300 158 L314 168 M300 182 L289 210 M300 182 L312 210"/>
+        <text x="326" y="130" class="acc" style="font-size:15px">+1</text>
+      </svg>
+      <figcaption>The PIR only sees warmth moving across its cone, so a pass becomes a count, nothing more.</figcaption>
+    </figure>
 
+    <figure class="scenebox">
+      <h3>Node B · environment station</h3>
+      <svg viewBox="0 0 400 300" role="img" aria-label="Side view of Node B: the same sealed box on a post, with a temperature and humidity sensor hanging in a vented radiation shield from an arm, a tipping-bucket rain gauge on its own short post under open sky, and a soil probe buried a few centimetres down in the trail tread, all cabled back to the box.">
+        <defs>
+          <symbol id="fb-fir" viewBox="0 0 40 60"><path d="M20 2 L34 26 H27 L36 42 H28 L38 56 H2 L12 42 H4 L13 26 H6 Z"/><rect x="18" y="54" width="4" height="6"/></symbol>
+          <symbol id="fb-oak" viewBox="0 0 40 60"><circle cx="20" cy="24" r="16"/><circle cx="10" cy="32" r="11"/><circle cx="30" cy="32" r="11"/><rect x="18" y="38" width="4" height="22"/></symbol>
+        </defs>
+        <g class="tree" opacity=".45">
+          <use href="#fb-oak" x="4" y="130" width="54" height="80"/>
+          <use href="#fb-fir" x="210" y="126" width="54" height="80"/>
+          <use href="#fb-oak" x="350" y="146" width="44" height="66"/>
+        </g>
+        <rect class="soil" x="0" y="216" width="400" height="84"/>
+        <g class="soil-deep">
+          <rect x="30" y="256" width="12" height="3" rx="1.5"/><rect x="88" y="280" width="10" height="3" rx="1.5"/><rect x="120" y="262" width="14" height="3" rx="1.5"/>
+          <rect x="330" y="296" width="12" height="3" rx="1.5"/><rect x="384" y="268" width="10" height="3" rx="1.5"/><rect x="60" y="290" width="10" height="3" rx="1.5"/>
+        </g>
+        <path class="grass" d="M24 216 l3 -9 M28 216 l3 -8 M100 216 l-3 -8 M118 216 l3 -8 M196 216 l-2 -8 M356 216 l3 -8 M360 216 l2 -7"/>
+        <!-- trail tread on the right -->
+        <rect class="trail" x="196" y="212" width="204" height="11" rx="4"/>
+        <text x="378" y="244" text-anchor="middle" class="lbl">trail</text>
+        <!-- main post with arm -->
+        <rect class="post" x="150" y="72" width="10" height="154" rx="2"/>
+        <rect class="post" x="66" y="70" width="98" height="6" rx="3"/>
+        <!-- radiation shield hanging from the arm -->
+        <path class="wire" d="M86 76 V82"/>
+        <g class="metal">
+          <rect x="66" y="82" width="40" height="6" rx="3"/>
+          <rect x="68" y="90" width="36" height="6" rx="3"/>
+          <rect x="66" y="98" width="40" height="6" rx="3"/>
+          <rect x="68" y="106" width="36" height="6" rx="3"/>
+          <rect x="66" y="114" width="40" height="6" rx="3"/>
+          <rect x="70" y="122" width="32" height="6" rx="3"/>
+        </g>
+        <text x="86" y="40" text-anchor="middle" class="lbl">temp / humidity</text>
+        <text x="86" y="57" text-anchor="middle" class="sub">in a vented shield</text>
+        <path class="wire" d="M86 128 V160 H120"/>
+        <!-- antenna -->
+        <path class="ln" d="M182 118 V98" stroke="var(--metal)"/>
+        <circle cx="182" cy="96" r="3" fill="var(--metal)"/>
+        <!-- sealed box -->
+        <rect class="hl" x="120" y="118" width="72" height="88" rx="7"/>
+        <path d="M120 134 H192" stroke="var(--accent)" stroke-width="1.2" opacity=".6"/>
+        <g fill="var(--accent)" opacity=".6"><circle cx="126" cy="125" r="1.6"/><circle cx="186" cy="125" r="1.6"/><circle cx="126" cy="199" r="1.6"/><circle cx="186" cy="199" r="1.6"/></g>
+        <text x="156" y="166" text-anchor="middle" class="head" style="font-size:15px">S2110</text>
+        <text x="156" y="186" text-anchor="middle" class="sub">+ S2100</text>
+        <!-- rain gauge on its own post -->
+        <rect class="post" x="300" y="126" width="7" height="100" rx="2"/>
+        <path class="metal" d="M280 70 H326 L311 96 H295 Z"/>
+        <rect class="metal" x="284" y="96" width="38" height="32" rx="3"/>
+        <path d="M290 112 h26" stroke="var(--metal)" stroke-width="1.2" opacity=".7"/>
+        <text x="303" y="40" text-anchor="middle" class="lbl">tipping-bucket</text>
+        <text x="303" y="57" text-anchor="middle" class="sub">rain gauge</text>
+        <text x="334" y="110" class="sub">open sky,</text>
+        <text x="334" y="126" class="sub">kept level</text>
+        <path class="wire" d="M192 172 H300"/>
+        <!-- soil probe, buried in the tread -->
+        <path class="wire" d="M166 206 V236 H236"/>
+        <rect class="acc" x="236" y="230" width="26" height="12" rx="2"/>
+        <path d="M262 232.5 H290 M262 236 H290 M262 239.5 H290" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/>
+        <text x="232" y="266" class="lbl">soil probe, buried</text>
+        <text x="232" y="283" class="sub">5–10 cm in the tread</text>
+      </svg>
+      <figcaption>Rain, air temperature and humidity, plus soil moisture and temperature from the spot that gets muddy first.</figcaption>
+    </figure>
+  </div>
+  <p style="margin-top:14px"><small style="color:var(--muted)">Side views, not to scale. Boxes stay sealed (IP66); cables enter through glands and only the sensor heads sit outside.</small></p>
+  </section>
+
+  <section>
+  <figure class="site">
+  <svg viewBox="0 0 440 324" role="img" aria-label="Site sketch, not to scale: the poolhouse with the M2 gateway sits uphill on the left; dashed LoRaWAN radio links run down the slope to two nodes beside the trail in the woods on the right, Node A counting visitors and Node B measuring rain, temperature and soil.">
+    <defs>
+      <symbol id="s-fir" viewBox="0 0 40 60"><path d="M20 2 L34 26 H27 L36 42 H28 L38 56 H2 L12 42 H4 L13 26 H6 Z"/><rect x="18" y="54" width="4" height="6"/></symbol>
+      <symbol id="s-oak" viewBox="0 0 40 60"><circle cx="20" cy="24" r="16"/><circle cx="10" cy="32" r="11"/><circle cx="30" cy="32" r="11"/><rect x="18" y="38" width="4" height="22"/></symbol>
+      <marker id="ar-site" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+    </defs>
+    <rect class="band" x="0" y="0" width="440" height="324" rx="14"/>
+    <!-- back ridge and front hill -->
+    <path class="ridge" d="M0 150 C 90 110, 180 120, 270 160 S 400 190, 440 180 V324 H0 Z"/>
+    <path class="hill" d="M0 136 C 70 118, 130 132, 200 170 S 330 236, 440 240 V324 H0 Z"/>
+    <!-- woods -->
+    <g class="tree" opacity=".8">
+      <use href="#s-fir" x="190" y="124" width="26" height="40"/>
+      <use href="#s-oak" x="226" y="140" width="24" height="36"/>
+      <use href="#s-fir" x="300" y="150" width="28" height="42"/>
+      <use href="#s-oak" x="340" y="130" width="26" height="40"/>
+      <use href="#s-fir" x="386" y="150" width="30" height="46"/>
+      <use href="#s-fir" x="404" y="196" width="32" height="48"/>
+      <use href="#s-oak" x="150" y="196" width="30" height="46"/>
+      <use href="#s-fir" x="190" y="262" width="34" height="52"/>
+      <use href="#s-oak" x="20" y="222" width="36" height="54"/>
+      <use href="#s-fir" x="70" y="250" width="34" height="52"/>
+    </g>
+    <!-- trail -->
+    <path class="trail-line" d="M110 324 C 150 292, 210 248, 270 250 S 400 276, 440 282"/>
+    <!-- poolhouse -->
+    <rect class="metal" x="34" y="92" width="88" height="36" rx="2"/>
+    <path d="M28 92 L78 64 L128 92 Z" fill="var(--post)" opacity=".85"/>
+    <rect x="70" y="106" width="14" height="22" rx="1" fill="var(--post)" opacity=".7"/>
+    <rect x="44" y="102" width="14" height="10" rx="1" fill="var(--band)" stroke="var(--metal)"/>
+    <rect x="98" y="102" width="14" height="10" rx="1" fill="var(--band)" stroke="var(--metal)"/>
+    <circle cx="112" cy="118" r="3.5" fill="var(--accent)"/>
+    <text x="16" y="36" class="head">Poolhouse</text>
+    <text x="16" y="54" class="sub">M2 gateway, indoors, uphill</text>
+    <!-- radio links -->
+    <path class="rf" d="M116 118 L240 198" marker-end="url(#ar-site)"/>
+    <path class="rf" d="M116 118 L362 216" marker-end="url(#ar-site)"/>
+    <text x="146" y="124" class="acc" transform="rotate(33 146 124)" style="font-size:13.5px">LoRaWAN radio</text>
     <!-- Node A -->
-    <text x="120" y="24" class="head" text-anchor="middle">Node A · visitor counter</text>
-    <rect class="acc" x="114" y="110" width="12" height="180"/>
-    <rect class="hl" x="84" y="100" width="72" height="62" rx="8"/>
-    <text x="120" y="126" text-anchor="middle" style="font-size:13px">S2110</text>
-    <text x="120" y="146" text-anchor="middle" style="font-size:13px">+ S2100</text>
-    <rect class="acc" x="156" y="124" width="16" height="22" rx="3"/>
-    <path class="zone" d="M172 135 L310 70 L310 290 L172 135 Z"/>
-    <text x="250" y="84" class="sub" text-anchor="middle">PIR sees across the trail</text>
-    <text x="80" y="188" class="sub" text-anchor="end">box ~1 m up</text>
-    <text x="80" y="204" class="sub" text-anchor="end">on a post</text>
-    <path class="ln" d="M150 135 H156"/>
-
+    <rect class="post" x="252" y="212" width="5" height="26" rx="1"/>
+    <rect class="hl" x="242" y="200" width="24" height="18" rx="4"/>
+    <text x="254" y="280" text-anchor="middle" class="head" style="font-size:15px">Node A</text>
+    <text x="254" y="297" text-anchor="middle" class="sub">visitor counter</text>
     <!-- Node B -->
-    <text x="520" y="24" class="head" text-anchor="middle">Node B · environment station</text>
-    <rect class="acc" x="474" y="110" width="12" height="180"/>
-    <rect class="hl" x="444" y="100" width="72" height="62" rx="8"/>
-    <text x="480" y="126" text-anchor="middle" style="font-size:13px">S2110</text>
-    <text x="480" y="146" text-anchor="middle" style="font-size:13px">+ S2100</text>
-    <!-- rain gauge on separate pole -->
-    <rect class="acc" x="636" y="150" width="8" height="140"/>
-    <path class="box" d="M618 150 L662 150 L652 120 L628 120 Z"/>
-    <text x="640" y="112" text-anchor="middle" class="sub">rain gauge</text>
-    <path class="ln" d="M516 140 H560 V170 H638"/>
-    <!-- radiation shield on arm -->
-    <path class="ln" d="M480 100 V70 H560"/>
-    <rect class="box" x="556" y="52" width="46" height="28" rx="6"/>
-    <path class="ln" d="M560 62 H598 M560 70 H598" stroke-width="1"/>
-    <text x="612" y="62" class="sub">temp / humidity</text>
-    <text x="612" y="78" class="sub">in a vented shield</text>
-    <path class="ln" d="M516 120 H540 V66 H556"/>
-    <!-- soil probe -->
-    <rect class="acc" x="530" y="296" width="6" height="48" rx="2"/>
-    <path class="ln" d="M516 150 H533 V296"/>
-    <text x="548" y="338" class="sub">soil probe (buried)</text>
-    <text x="440" y="188" class="sub" text-anchor="end">cables enter the box</text>
-    <text x="440" y="204" class="sub" text-anchor="end">through glands</text>
-    <text x="626" y="190" text-anchor="end" class="sub">open sky,</text>
-    <text x="626" y="206" text-anchor="end" class="sub">level mount</text>
+    <rect class="post" x="374" y="230" width="5" height="26" rx="1"/>
+    <rect class="hl" x="364" y="218" width="24" height="18" rx="4"/>
+    <text x="376" y="298" text-anchor="middle" class="head" style="font-size:15px">Node B</text>
+    <text x="376" y="315" text-anchor="middle" class="sub">rain · temp · soil</text>
   </svg>
-  <figcaption>Side view. Boxes stay sealed (IP66); only cables and the sensor heads leave them.</figcaption>
+  <figcaption>Not to scale. Both nodes talk to one gateway. A walk test with the S2100 will confirm that signal reaches the trail before anything is mounted.</figcaption>
   </figure>
+  </section>
 
-  <figure>
-  <svg viewBox="0 0 560 280" role="img" aria-label="Site sketch: the gateway on the hill at the poolhouse with radio links down to two nodes in the woods">
-    <rect class="ground" x="0" y="0" width="560" height="280" opacity=".35"/>
-    <path class="zone" d="M0 150 Q 120 120 260 175 T 560 210 V280 H0 Z" style="opacity:.2"/>
-    <text x="14" y="26" class="head">Not to scale · illustrative</text>
-    <rect class="hl" x="60" y="52" width="150" height="54" rx="10"/>
-    <text x="135" y="76" text-anchor="middle" class="head">Poolhouse</text>
-    <text x="135" y="94" text-anchor="middle" class="sub">M2 gateway · uphill</text>
-    <path class="rf" d="M170 106 L330 190"/>
-    <path class="rf" d="M170 106 L440 220"/>
-    <text x="305" y="132" class="acc" transform="rotate(26 305 132)">LoRaWAN</text>
-    <rect class="hl" x="290" y="190" width="90" height="46" rx="10"/>
-    <text x="335" y="210" text-anchor="middle" class="head">Node A</text>
-    <text x="335" y="227" text-anchor="middle" class="sub">visitor count</text>
-    <rect class="hl" x="400" y="220" width="130" height="46" rx="10"/>
-    <text x="465" y="240" text-anchor="middle" class="head">Node B</text>
-    <text x="465" y="257" text-anchor="middle" class="sub">rain · temp · soil</text>
-  </svg>
-  <figcaption>Both nodes talk to one gateway. A walk test with the S2100 will confirm that signal reaches the trail before anything is mounted.</figcaption>
-  </figure>
-
+  <section>
   <h2>Trail conditions: is it muddy?</h2>
   <p>The soil probe and rain gauge can also answer a question dog walkers and runners ask all the time. A small public status card would show conditions at the spot where the probe is buried.</p>
-  <div class="statuscard" aria-label="Mock-up of the public status card">
-    <small>MOCK-UP · Conditions at the [trail section name]</small>
-    <div class="big">Muddy</div>
-    <div>Soil is saturated after 0.8&Prime; of rain in the last 24 h.</div>
+  <div class="statuscard" role="group" aria-label="Mock-up of the public status card">
+    <div class="top"><span class="where">Conditions at the [trail section name]</span><span class="tag">Mock-up</span></div>
+    <div class="big"><svg viewBox="0 0 24 24" class="cond" aria-hidden="true"><path d="M3 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M3 21c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M12 3c-2.5 3-4 5-4 7a4 4 0 0 0 8 0c0-2-1.5-4-4-7z"/></svg>Muddy</div>
+    <p>Soil is saturated after 0.8&Prime; of rain in the last 24&nbsp;h.</p>
     <small>Updated 12 min ago</small>
   </div>
-  <div class="states">
-    <div class="state dry"><b>Dry</b><span>Low soil moisture, little recent rain.</span></div>
-    <div class="state damp"><b>Damp</b><span>Moderate moisture. Fine for most shoes.</span></div>
-    <div class="state muddy"><b>Muddy</b><span>High moisture, or heavy rain in the last 48 h.</span></div>
-    <div class="state frozen"><b>Frozen</b><span>Soil temperature at or below 0&deg;C. Expect a thaw mess afterward.</span></div>
-  </div>
-  <div class="card">
+  <ul class="states" aria-label="The four trail states">
+    <li class="state dry"><div class="name"><svg viewBox="0 0 24 24" class="cond" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>Dry</div><span>Low soil moisture, little recent rain.</span></li>
+    <li class="state damp"><div class="name"><svg viewBox="0 0 24 24" class="cond" aria-hidden="true"><path d="M12 3c-3.5 4.5-6 7.5-6 11a6 6 0 0 0 12 0c0-3.5-2.5-6.5-6-11z"/></svg>Damp</div><span>Moderate moisture. Fine for most shoes.</span></li>
+    <li class="state muddy"><div class="name"><svg viewBox="0 0 24 24" class="cond" aria-hidden="true"><path d="M3 17c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M3 21c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M12 3c-2.5 3-4 5-4 7a4 4 0 0 0 8 0c0-2-1.5-4-4-7z"/></svg>Muddy</div><span>High moisture, or heavy rain in the last 48 h.</span></li>
+    <li class="state frozen"><div class="name"><svg viewBox="0 0 24 24" class="cond" aria-hidden="true"><path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5M2 12l2.5-2.5M2 12l2.5 2.5M22 12l-2.5-2.5M22 12l-2.5 2.5"/></svg>Frozen</div><span>Soil temperature at or below 0&deg;C. Expect a thaw mess afterward.</span></li>
+  </ul>
+  <div class="card stack">
   <table>
-    <tr><th>Signal</th><th>From</th><th>Role</th></tr>
-    <tr><td>Soil moisture</td><td>Probe buried 5&ndash;10 cm in the trail tread</td><td>Main signal</td></tr>
-    <tr><td>Rain, last 24&ndash;48 h</td><td>Rain gauge</td><td>Backup, and an early warning</td></tr>
-    <tr><td>Soil temperature</td><td>Same probe</td><td>Detects frozen ground and thaw</td></tr>
+    <thead><tr><th scope="col">Signal</th><th scope="col">From</th><th scope="col">Role</th></tr></thead>
+    <tbody>
+    <tr><td>Soil moisture</td><td data-label="From">Probe buried 5&ndash;10 cm in the trail tread</td><td data-label="Role">Main signal</td></tr>
+    <tr><td>Rain, last 24&ndash;48 h</td><td data-label="From">Rain gauge</td><td data-label="Role">Backup, and an early warning</td></tr>
+    <tr><td>Soil temperature</td><td data-label="From">Same probe</td><td data-label="Role">Detects frozen ground and thaw</td></tr>
+    </tbody>
   </table>
   </div>
   <ul>
@@ -212,7 +496,9 @@
     <li><strong>Honest labelling:</strong> one probe covers one spot, so the card says which section it describes.</li>
     <li><strong>Publishing:</strong> a small scheduled job turns the latest readings into a <code>status.json</code> file that this page or woodmontfriends.org can read.</li>
   </ul>
+  </section>
 
+  <section>
   <h2>Plan</h2>
   <ol>
     <li><strong>Range test.</strong> Put the gateway in the poolhouse and check signal strength from the trail location with the S2100.</li>
@@ -223,7 +509,9 @@
     <li><strong>Trail conditions.</strong> Calibrate the soil probe against observed conditions and publish the status card.</li>
     <li><strong>Later.</strong> Solar power, a second trail, and possibly an on-device camera that reports counts only.</li>
   </ol>
+  </section>
 
+  <section>
   <h2>Open questions</h2>
   <ul>
     <li>Does the current S2110 firmware support a PIR out of the box?</li>
@@ -231,8 +519,12 @@
     <li>Where to host the data long term (SenseCAP Cloud vs. The Things Network).</li>
     <li>Park permission and signage before any camera is added.</li>
   </ul>
+  </section>
 
-  <footer>A project of <a href="https://github.com/WoodmontFriends">Friends of Woodmont Park</a>. Source and notes on <a href="https://github.com/WoodmontFriends/trail-counter">GitHub</a>.</footer>
+  <footer>
+    <p>A project of <a href="https://github.com/WoodmontFriends">Friends of Woodmont Park</a>.</p>
+    <p>Source and notes on <a href="https://github.com/WoodmontFriends/trail-counter">GitHub</a>.</p>
+  </footer>
 </main>
 </body>
 </html>
