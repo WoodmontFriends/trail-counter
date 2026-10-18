@@ -38,6 +38,15 @@
   svg .acc { fill:var(--accent); }
   svg text.acc { fill:var(--accent); font-weight:600; }
   svg .head { font-weight:600; }
+  .states { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:16px 0; }
+  .state { background:var(--card); border:1px solid var(--line); border-left-width:6px; border-radius:10px; padding:12px 14px; }
+  .state b { display:block; font-size:1.1rem; }
+  .state span { color:var(--muted); font-size:.9rem; }
+  .state.dry { border-left-color:#3d8b4a; } .state.damp { border-left-color:#c9a227; }
+  .state.muddy { border-left-color:#a0522d; } .state.frozen { border-left-color:#4a90c2; }
+  .statuscard { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; max-width:380px; }
+  .statuscard .big { font-size:1.6rem; font-weight:700; color:#a0522d; margin:4px 0; }
+  .statuscard small { color:var(--muted); }
   footer { margin-top:48px; color:var(--muted); font-size:.9rem; }
   a { color:var(--accent); }
 </style>
@@ -175,6 +184,35 @@
   <figcaption>Both nodes talk to one gateway. A walk test with the S2100 will confirm that signal reaches the trail before anything is mounted.</figcaption>
   </figure>
 
+  <h2>Trail conditions: is it muddy?</h2>
+  <p>The soil probe and rain gauge can also answer a question dog walkers and runners ask all the time. A small public status card would show conditions at the spot where the probe is buried.</p>
+  <div class="statuscard" aria-label="Mock-up of the public status card">
+    <small>MOCK-UP · Conditions at the [trail section name]</small>
+    <div class="big">Muddy</div>
+    <div>Soil is saturated after 0.8&Prime; of rain in the last 24 h.</div>
+    <small>Updated 12 min ago</small>
+  </div>
+  <div class="states">
+    <div class="state dry"><b>Dry</b><span>Low soil moisture, little recent rain.</span></div>
+    <div class="state damp"><b>Damp</b><span>Moderate moisture. Fine for most shoes.</span></div>
+    <div class="state muddy"><b>Muddy</b><span>High moisture, or heavy rain in the last 48 h.</span></div>
+    <div class="state frozen"><b>Frozen</b><span>Soil temperature at or below 0&deg;C. Expect a thaw mess afterward.</span></div>
+  </div>
+  <div class="card">
+  <table>
+    <tr><th>Signal</th><th>From</th><th>Role</th></tr>
+    <tr><td>Soil moisture</td><td>Probe buried 5&ndash;10 cm in the trail tread</td><td>Main signal</td></tr>
+    <tr><td>Rain, last 24&ndash;48 h</td><td>Rain gauge</td><td>Backup, and an early warning</td></tr>
+    <tr><td>Soil temperature</td><td>Same probe</td><td>Detects frozen ground and thaw</td></tr>
+  </table>
+  </div>
+  <ul>
+    <li><strong>Placement:</strong> put the probe at the spot that gets muddy first, in the trail itself, not beside it.</li>
+    <li><strong>Calibration:</strong> for a few weeks, note and photograph trail conditions after different weather, then set the thresholds from the readings.</li>
+    <li><strong>Honest labelling:</strong> one probe covers one spot, so the card says which section it describes.</li>
+    <li><strong>Publishing:</strong> a small scheduled job turns the latest readings into a <code>status.json</code> file that this page or woodmontfriends.org can read.</li>
+  </ul>
+
   <h2>Plan</h2>
   <ol>
     <li><strong>Range test.</strong> Put the gateway in the poolhouse and check signal strength from the trail location with the S2100.</li>
@@ -182,6 +220,7 @@
     <li><strong>Firmware.</strong> Debounced counter (ignore re-triggers for ~3 s) exposed as a Modbus register, if the stock firmware doesn't cover it.</li>
     <li><strong>Field trial.</strong> Battery powered on one trail for a few weeks; compare against a manual count.</li>
     <li><strong>Environment station.</strong> Build Node B so visitor counts can be compared with rain and temperature.</li>
+    <li><strong>Trail conditions.</strong> Calibrate the soil probe against observed conditions and publish the status card.</li>
     <li><strong>Later.</strong> Solar power, a second trail, and possibly an on-device camera that reports counts only.</li>
   </ol>
 
