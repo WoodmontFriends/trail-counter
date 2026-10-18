@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Woodmont Trail Counter</title>
+<meta name="description" content="A low-power LoRaWAN sensor that counts trail visitors at Woodmont Park. Counts only, no images.">
+<style>
+  :root { --bg:#f7f5ef; --fg:#1f2a1f; --muted:#5b665b; --accent:#2f6b3a; --card:#fff; --line:#dcd8cb; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141a14; --fg:#e8ece6; --muted:#9aa89a; --accent:#7fc58a; --card:#1c241c; --line:#2d392d; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:40px 16px 64px; }
+  h1 { font-size:2rem; line-height:1.2; margin:0 0 8px; }
+  h2 { font-size:1.25rem; margin:40px 0 12px; color:var(--accent); }
+  p.lead { color:var(--muted); font-size:1.1rem; margin:0 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 20px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:.9rem; }
+  pre { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; overflow-x:auto; font-size:.9rem; line-height:1.4; }
+  ol li, ul li { margin:6px 0; }
+  .tag { display:inline-block; font-size:.8rem; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--muted); }
+  footer { margin-top:48px; color:var(--muted); font-size:.9rem; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Draft · first pass</span>
+  <h1>Woodmont Trail Counter</h1>
+  <p class="lead">A small, low-power sensor that counts how many people use the trails at Woodmont Park, so the Friends of Woodmont Park can show real usage numbers when asking for support.</p>
+
+  <h2>What it does</h2>
+  <ul>
+    <li>Counts passes on a trail with a motion (PIR) sensor and reports the total every 10–15 minutes.</li>
+    <li><strong>Counts only.</strong> No images, no audio, no personal data.</li>
+    <li>Runs on batteries, with a solar panel planned as a later upgrade.</li>
+  </ul>
+
+  <h2>How it works</h2>
+<pre>
+ PIR sensor ──Grove──▶ SenseCAP S2110 ──RS485──▶ SenseCAP S2100 ──LoRaWAN──▶ Gateway ──▶ Cloud / dashboard
+ (in the woods)        (XIAO RP2040,             (data logger,              (rec center
+                        counts + Modbus)          battery powered)           poolhouse)
+</pre>
+
+  <h2>Hardware</h2>
+  <div class="card">
+  <table>
+    <tr><th>Part</th><th>Role</th></tr>
+    <tr><td>SenseCAP S2110 Sensor Builder</td><td>XIAO RP2040 board in an IP66 box. Reads the PIR and exposes the count as an RS485/Modbus sensor.</td></tr>
+    <tr><td>SenseCAP S2100 data logger</td><td>Polls the S2110 and sends the count by LoRaWAN. Battery powered.</td></tr>
+    <tr><td>SenseCAP M2 indoor gateway (US915)</td><td>Receives uplinks. Planned location: rec center poolhouse, uphill with line of sight to the trail.</td></tr>
+    <tr><td>Grove PIR motion sensor</td><td>Detects people passing. To be ordered or confirmed.</td></tr>
+  </table>
+  </div>
+
+  <h2>Plan</h2>
+  <ol>
+    <li><strong>Range test.</strong> Put the gateway in the poolhouse and check signal strength from the trail location with the S2100.</li>
+    <li><strong>Bench prototype.</strong> PIR on the S2110, confirm counts show up in SenseCAP Cloud.</li>
+    <li><strong>Firmware.</strong> Debounced counter (ignore re-triggers for ~3 s) exposed as a Modbus register, if the stock firmware doesn't cover it.</li>
+    <li><strong>Field trial.</strong> Battery powered on one trail for a few weeks; compare against a manual count.</li>
+    <li><strong>Later.</strong> Solar power, a second trail, and possibly an on-device camera that reports counts only.</li>
+  </ol>
+
+  <h2>Open questions</h2>
+  <ul>
+    <li>Does the current S2110 firmware support a PIR out of the box?</li>
+    <li>Best weatherproof mounting height and angle to avoid false triggers from foliage and wildlife.</li>
+    <li>Where to host the data long term (SenseCAP Cloud vs. The Things Network).</li>
+    <li>Park permission and signage before any camera is added.</li>
+  </ul>
+
+  <footer>A project of <a href="https://github.com/WoodmontFriends">Friends of Woodmont Park</a>. Source and notes on <a href="https://github.com/WoodmontFriends/trail-counter">GitHub</a>.</footer>
+</main>
+</body>
+</html>
